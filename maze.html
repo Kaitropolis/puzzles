@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maze</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script defer src="scripts/maze.js"></script>
+  </head>
+  <body class="font-sans">
+    <main
+      class="flex justify-center items-center h-[100vh] container text-gray-600"
+    >
+      <div class="w-[800px]">
+        <div class="flex justify-center">
+          <button
+            type="button"
+            id="start-btn"
+            class="px-4 py-2 text-lg bg-blue-500 rounded text-white mb-6 cursor-pointer hover:bg-blue-600 transition focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            Build Maze
+          </button>
+        </div>
+
+        <div
+          id="game-container"
+          class="flex justify-between items-end mb-6"
+        ></div>
+      </div>
+    </main>
+  </body>
+</html>
