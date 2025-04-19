@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Problems</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script defer src="index.js"></script>
+  </head>
+  <body class="font-sans">
+    <main
+      class="flex justify-center items-center h-[100vh] container text-gray-600"
+    >
+      <div class="w-[800px]">
+        <div class="flex justify-center">
+          <button
+            type="button"
+            id="start-btn"
+            class="px-4 py-2 text-lg bg-blue-500 rounded text-white mb-6 cursor-pointer hover:bg-blue-600 transition focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            Start
+          </button>
+        </div>
+
+        <div id="game-container" class="flex justify-between items-end mb-6">
+          <!-- Rod 1 -->
+          <div
+            class="relative flex flex-col justify-end items-center h-[150px] w-[80px]"
+          >
+            <div
+              id="rod-1"
+              class="h-[150px] w-[5px] bg-gray-500 absolute flex flex-col items-center justify-end"
+            ></div>
+          </div>
+
+          <!-- Rod 2 -->
+          <div
+            class="relative flex flex-col justify-end items-center h-[150px] w-[80px]"
+          >
+            <div
+              id="rod-2"
+              class="h-[150px] w-[5px] bg-gray-500 absolute flex flex-col items-center justify-end"
+            ></div>
+          </div>
+
+          <!-- Rod 3 -->
+          <div
+            class="relative flex flex-col justify-end items-center h-[150px] w-[80px]"
+          >
+            <div
+              id="rod-3"
+              class="h-[150px] w-[5px] bg-gray-500 absolute flex flex-col items-center justify-end"
+            ></div>
+          </div>
+        </div>
+
+        <h1 id="moves" class="flex justify-end font-bold text-2xl">Moves: 0</h1>
+      </div>
+    </main>
+  </body>
+</html>
