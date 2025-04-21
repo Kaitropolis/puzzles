@@ -112,7 +112,7 @@ class Maze {
     hitting a dead-end.
   */
   dfs() {
-    const stack = [[null, 0]] // Track vertices we are moving from and to
+    const stack = [[null, 0]] // Track 'from' and 'to' vertices
     const visited = new Set()
     const path = []
 
