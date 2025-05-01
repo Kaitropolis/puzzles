@@ -1,9 +1,10 @@
 class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
-    this.rows = 10;
-    this.cols = 10;
+    this.rows = 15;
+    this.cols = 15;
     this.graph = [];
+
     this.init();
   }
 
