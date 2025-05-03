@@ -1,9 +1,11 @@
 class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
-    this.rows = 15;
-    this.cols = 15;
+    this.rows = 25;
+    this.cols = 25;
     this.graph = [];
+    this.robber = { vertex: null, vertexEl: null, colour: "bg-gray-400" };
+    this.cop = { vertex: null, vertexEl: null, colour: "bg-blue-500" };
 
     this.init();
   }
@@ -12,7 +14,9 @@ class Maze {
     this.createGraph();
     await this.createMaze();
     await this.sleep(1000);
-    await this.traverseMaze();
+    this.addPlayers();
+    this.addPlayerEvents();
+    //await this.traverseMaze();
   }
 
   createGraph() {
@@ -28,7 +32,8 @@ class Maze {
         const vertexEl = document.createElement("td");
         vertexEl.id = vertex.toString();
         vertexEl.className =
-          "text-center w-[20px] h-[20px] text-sm border-t-6 border-b-6 border-l-6 border-r-6 border-gray-300 text-white font-semibold";
+          "text-center w-[25px] h-[25px] text-sm border-t-6 border-b-6 border-l-6 border-r-6 border-gray-300 text-white font-semibold";
+        vertexEl.innerHTML = '<div class="w-[12px] h-[12px]"></div>';
 
         //vertexEl.innerText = vertex;
         rowEl.appendChild(vertexEl);
@@ -70,7 +75,7 @@ class Maze {
     // ];
 
     for (let i = 0; i < path.length; ++i) {
-      await this.sleep(50);
+      await this.sleep(10);
 
       const [from, to] = path[i];
       const fromEl = document.getElementById(from.toString());
@@ -85,26 +90,26 @@ class Maze {
         toEl.classList.add("bg-blue-400");
       }
 
-      let movedConsecutively = false;
+      let isFromAndToAdjacent = false;
       if (from - this.cols === to) {
         fromEl.classList.remove("border-t-6");
         toEl.classList.remove("border-b-6");
-        movedConsecutively = true;
+        isFromAndToAdjacent = true;
       } else if (from + this.cols === to) {
         fromEl.classList.remove("border-b-6");
         toEl.classList.remove("border-t-6");
-        movedConsecutively = true;
+        isFromAndToAdjacent = true;
       } else if (from - 1 === to) {
         fromEl.classList.remove("border-l-6");
         toEl.classList.remove("border-r-6");
-        movedConsecutively = true;
+        isFromAndToAdjacent = true;
       } else if (from + 1 === to) {
         fromEl.classList.remove("border-r-6");
         toEl.classList.remove("border-l-6");
-        movedConsecutively = true;
+        isFromAndToAdjacent = true;
       }
 
-      if (movedConsecutively) {
+      if (isFromAndToAdjacent) {
         if (i === 0) {
           this.graph[from] = [to];
         } else {
@@ -213,6 +218,67 @@ class Maze {
     }
 
     return path;
+  }
+
+  addPlayers() {
+    const row = Math.floor(Math.random() * this.rows);
+    const col = Math.floor(Math.random() * this.cols);
+    const vertex = row * this.cols + col;
+
+    this.insertPlayer(this.robber, 0);
+    this.insertPlayer(this.cop, vertex);
+  }
+
+  insertPlayer(player, vertex) {
+    const vertexEl = document.getElementById(vertex.toString());
+
+    vertexEl.innerHTML = `<div class="flex justify-center items-center">
+        <div class="w-[12px] h-[12px] ${player.colour}"></div>
+      </div>`;
+
+    player.vertex = vertex;
+    player.vertexEl = vertexEl;
+  }
+
+  removePlayer(player) {
+    player.vertexEl.innerHTML = '<div class="w-[12px] h-[12px]"></div>';
+  }
+
+  tryMovePlayer(player, vertex) {
+    if (this.graph[player.vertex].includes(vertex)) {
+      this.removePlayer(player);
+      this.insertPlayer(player, vertex);
+    }
+  }
+
+  addPlayerEvents() {
+    document.addEventListener("keydown", this.onKeydown.bind(this));
+  }
+
+  onKeydown(e) {
+    //e.preventDefault();
+
+    // Robber movement
+    if (e.key === "w") {
+      this.tryMovePlayer(this.robber, this.robber.vertex - this.cols);
+    } else if (e.key === "s") {
+      this.tryMovePlayer(this.robber, this.robber.vertex + this.cols);
+    } else if (e.key === "a") {
+      this.tryMovePlayer(this.robber, this.robber.vertex - 1);
+    } else if (e.key === "d") {
+      this.tryMovePlayer(this.robber, this.robber.vertex + 1);
+    }
+
+    // Cop movement
+    if (e.key === "ArrowUp") {
+      this.tryMovePlayer(this.cop, this.cop.vertex - this.cols);
+    } else if (e.key === "ArrowDown") {
+      this.tryMovePlayer(this.cop, this.cop.vertex + this.cols);
+    } else if (e.key === "ArrowLeft") {
+      this.tryMovePlayer(this.cop, this.cop.vertex - 1);
+    } else if (e.key === "ArrowRight") {
+      this.tryMovePlayer(this.cop, this.cop.vertex + 1);
+    }
   }
 
   sleep = (ms) => new Promise((r) => setTimeout(r, ms));
