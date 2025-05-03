@@ -2,7 +2,7 @@ class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
     this.rows = 25;
-    this.cols = 25;
+    this.cols = 50;
     this.graph = [];
     this.robber = { vertex: null, vertexEl: null, colour: "bg-gray-400" };
     this.cop = { vertex: null, vertexEl: null, colour: "bg-blue-500" };
