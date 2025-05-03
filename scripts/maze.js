@@ -13,9 +13,9 @@ class Maze {
   async init() {
     this.createGraph();
     await this.createMaze();
-    await this.sleep(1000);
     this.addPlayers();
     this.addPlayerEvents();
+    await this.sleep(1000);
     //await this.traverseMaze();
   }
 
@@ -256,7 +256,20 @@ class Maze {
   }
 
   onKeydown(e) {
-    //e.preventDefault();
+    const validKeys = [
+      "w",
+      "s",
+      "a",
+      "d",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+    ];
+
+    if (validKeys.includes(e.key)) {
+      e.preventDefault();
+    }
 
     // Robber movement
     if (e.key === "w") {
