@@ -1,0 +1,3 @@
+Maze:
+Cast a shadow background around the cop, hiding the surrounding path. 
+The immediate path should still be visible though to enable navigation.
