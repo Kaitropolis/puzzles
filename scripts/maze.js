@@ -1,8 +1,8 @@
 class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
-    this.rows = 10;
-    this.cols = 10;
+    this.rows = 25;
+    this.cols = 50;
     this.graph = [];
     this.bulletLifetime = 10; // Steps
     this.robber = {
@@ -10,6 +10,7 @@ class Maze {
       vertexEl: null,
       colour: "bg-gray-400",
       canTeleport: true,
+      canTeleportOtherPlayer: true,
       canShoot: false,
       direction: null,
     };
@@ -18,6 +19,7 @@ class Maze {
       vertexEl: null,
       colour: "bg-blue-500",
       canTeleport: false,
+      canTeleportOtherPlayer: false,
       canShoot: true,
       direction: null,
     };
@@ -97,7 +99,7 @@ class Maze {
     // ];
 
     for (let i = 0; i < path.length; ++i) {
-      //await this.sleep(10);
+      await this.sleep(1);
 
       const [from, to] = path[i];
       const fromEl = document.getElementById(from.toString());
@@ -246,7 +248,7 @@ class Maze {
     this.addPlayers();
     this.addPlayerEvents();
 
-    setInterval(this.gameLoop.bind(this), 500);
+    setInterval(this.gameLoop.bind(this), 250);
   }
 
   gameLoop() {
@@ -330,9 +332,15 @@ class Maze {
   }
 
   tryPlayerTeleport(player, otherPlayer) {
-    this.robber.canTeleport = false;
+    player.canTeleport = false;
     const vertex = Math.floor(Math.random() * (this.rows * this.cols));
     this.tryMovePlayer(player, otherPlayer, vertex, "right", true);
+  }
+
+  tryOtherPlayerTeleport(player, otherPlayer) {
+    player.canTeleportOtherPlayer = false;
+    const vertex = Math.floor(Math.random() * (this.rows * this.cols));
+    this.tryMovePlayer(otherPlayer, player, vertex, "right", true);
   }
 
   tryPlayerShoot(player, bullet, isMissile) {
@@ -346,7 +354,7 @@ class Maze {
     if (!this.graph[player.vertex].includes(nextVertex)) return;
 
     player.canShoot = false;
-    player.lifetime = isMissile ? 50 : 20;
+    player.lifetime = isMissile ? 100 : 30;
     bullet.isMissile = isMissile;
 
     this.insertBullet(bullet, nextVertex, player.direction);
@@ -375,7 +383,8 @@ class Maze {
   }
 
   tryMoveBullet(bullet, vertex, direction) {
-    if (vertex < 0 || vertex >= this.rows * this.cols) return false;
+    if (this.isVertexOutOfBounds(vertex, direction) && !bullet.isMissile)
+      return false;
 
     if (!bullet.isMissile) {
       this.moveBullet(bullet, vertex, direction);
@@ -406,6 +415,19 @@ class Maze {
     }
 
     return false;
+  }
+
+  // Check if the next vertex in the given direction is out of bounds
+  isVertexOutOfBounds(vertex, direction) {
+    const row = Math.floor(vertex / this.cols);
+    const col = vertex % this.cols;
+
+    if (row < 0) return true;
+    if (row > this.rows - 1) return true;
+    if (col === this.cols - 1 && direction === "left") return true;
+    if (col === 0 && direction === "right") return true;
+
+    return vertex < 0 || vertex >= this.rows * this.cols;
   }
 
   validMissileTurnDirections(direction) {
@@ -451,6 +473,7 @@ class Maze {
       "ArrowLeft",
       "ArrowRight",
       " ",
+      "r",
       "Enter",
       "p",
     ];
@@ -518,6 +541,8 @@ class Maze {
     // Robber Abilities
     if (e.key === " " && this.robber.canTeleport) {
       this.tryPlayerTeleport(this.robber, this.cop);
+    } else if (e.key === "r" && this.robber.canTeleportOtherPlayer) {
+      this.tryOtherPlayerTeleport(this.robber, this.cop);
     }
 
     // Cop Abilities
