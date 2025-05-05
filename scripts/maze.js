@@ -106,7 +106,7 @@ class Maze {
     // ];
 
     for (let i = 0; i < path.length; ++i) {
-      //await this.sleep(1);
+      await this.sleep(1);
 
       const [from, to] = path[i];
       const fromEl = document.getElementById(from.toString());
