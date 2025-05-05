@@ -1,11 +1,34 @@
 class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
-    this.rows = 25;
-    this.cols = 50;
+    this.rows = 10;
+    this.cols = 10;
     this.graph = [];
-    this.robber = { vertex: null, vertexEl: null, colour: "bg-gray-400" };
-    this.cop = { vertex: null, vertexEl: null, colour: "bg-blue-500" };
+    this.bulletLifetime = 10; // Steps
+    this.robber = {
+      vertex: null,
+      vertexEl: null,
+      colour: "bg-gray-400",
+      canTeleport: true,
+      canShoot: false,
+      direction: null,
+    };
+    this.cop = {
+      vertex: null,
+      vertexEl: null,
+      colour: "bg-blue-500",
+      canTeleport: false,
+      canShoot: true,
+      direction: null,
+    };
+    this.copBullet = {
+      vertex: null,
+      vertexEl: null,
+      colour: "bg-yellow-600",
+      direction: null,
+      lifetime: this.bulletLifetime,
+      isMissile: false,
+    };
 
     this.init();
   }
@@ -13,9 +36,8 @@ class Maze {
   async init() {
     this.createGraph();
     await this.createMaze();
-    this.addPlayers();
-    this.addPlayerEvents();
-    await this.sleep(1000);
+    this.startGame();
+    //await this.sleep(1000);
     //await this.traverseMaze();
   }
 
@@ -75,7 +97,7 @@ class Maze {
     // ];
 
     for (let i = 0; i < path.length; ++i) {
-      await this.sleep(10);
+      //await this.sleep(10);
 
       const [from, to] = path[i];
       const fromEl = document.getElementById(from.toString());
@@ -220,11 +242,43 @@ class Maze {
     return path;
   }
 
-  addPlayers() {
-    const row = Math.floor(Math.random() * this.rows);
-    const col = Math.floor(Math.random() * this.cols);
-    const vertex = row * this.cols + col;
+  startGame() {
+    this.addPlayers();
+    this.addPlayerEvents();
 
+    setInterval(this.gameLoop.bind(this), 500);
+  }
+
+  gameLoop() {
+    // Bullets
+    if (this.copBullet.lifetime === 0) {
+      this.removeBulletPermanent(this.copBullet);
+      this.cop.canShoot = true;
+    } else if (Number.isFinite(this.copBullet.vertex)) {
+      const moved = this.tryMoveBullet(
+        this.copBullet,
+        this.nextVertexInDirection(
+          this.copBullet.vertex,
+          this.copBullet.direction
+        ),
+        this.copBullet.direction
+      );
+
+      if (!moved) {
+        this.removeBulletPermanent(this.copBullet);
+        this.cop.canShoot = true;
+      }
+
+      this.copBullet.lifetime--;
+    }
+
+    if (this.copBullet.vertex === this.robber.vertex) {
+      this.removePlayerPermanent(this.robber);
+    }
+  }
+
+  addPlayers() {
+    const vertex = Math.floor(Math.random() * (this.rows * this.cols));
     this.insertPlayer(this.robber, 0);
     this.insertPlayer(this.cop, vertex);
   }
@@ -244,15 +298,144 @@ class Maze {
     player.vertexEl.innerHTML = '<div class="w-[12px] h-[12px]"></div>';
   }
 
-  tryMovePlayer(player, vertex) {
-    if (this.graph[player.vertex].includes(vertex)) {
-      this.removePlayer(player);
-      this.insertPlayer(player, vertex);
+  removePlayerPermanent(player) {
+    this.removePlayer(player);
+    player.vertex = null;
+  }
+
+  tryMovePlayer(player, otherPlayer, vertex, direction, isTeleporting) {
+    if (vertex < 0 || vertex >= this.rows * this.cols) return false;
+    if (isTeleporting) return this.movePlayer(player, vertex, direction);
+
+    // Attempt to move one space beyond the player in the current direction
+    if (vertex === otherPlayer.vertex) {
+      vertex = this.nextVertexInDirection(vertex, direction);
+
+      if (this.graph[otherPlayer.vertex].includes(vertex)) {
+        this.movePlayer(player, vertex, direction);
+      }
+
+      return;
     }
+
+    if (this.graph[player.vertex].includes(vertex)) {
+      this.movePlayer(player, vertex, direction);
+    }
+  }
+
+  movePlayer(player, vertex, direction) {
+    this.removePlayer(player);
+    this.insertPlayer(player, vertex);
+    player.direction = direction;
+  }
+
+  tryPlayerTeleport(player, otherPlayer) {
+    this.robber.canTeleport = false;
+    const vertex = Math.floor(Math.random() * (this.rows * this.cols));
+    this.tryMovePlayer(player, otherPlayer, vertex, "right", true);
+  }
+
+  tryPlayerShoot(player, bullet, isMissile) {
+    if (!player.direction) return;
+
+    player.canShoot = false;
+    player.isMissile = isMissile;
+
+    player.lifetime = isMissile ? 50 : 20;
+
+    this.insertBullet(
+      bullet,
+      this.nextVertexInDirection(player.vertex, player.direction),
+      player.direction
+    );
+  }
+
+  insertBullet(bullet, vertex, direction) {
+    const vertexEl = document.getElementById(vertex.toString());
+
+    vertexEl.innerHTML = `<div class="flex justify-center items-center rounded-full">
+        <div class="w-[8px] h-[8px] ${bullet.colour}"></div>
+      </div>`;
+
+    bullet.vertex = vertex;
+    bullet.vertexEl = vertexEl;
+    bullet.lifetime = this.bulletLifetime;
+    bullet.direction = direction;
+  }
+
+  removeBullet(bullet) {
+    bullet.vertexEl.innerHTML = '<div class="w-[12px] h-[12px]"></div>';
+  }
+
+  removeBulletPermanent(bullet) {
+    this.removeBullet(bullet);
+    bullet.vertex = null;
+  }
+
+  tryMoveBullet(bullet, vertex, direction) {
+    if (vertex < 0 || vertex >= this.rows * this.cols) return false;
+
+    if (!bullet.isMissile) {
+      this.moveBullet(bullet, vertex, direction);
+      return true;
+    }
+
+    if (this.graph[bullet.vertex].includes(vertex)) {
+      this.moveBullet(bullet, vertex, direction);
+      return true;
+    }
+
+    const directions = this.validMissileTurnDirections(direction);
+
+    while (directions.length > 0) {
+      const index = Math.floor(Math.random() * directions.length);
+      const randomDirection = directions[index];
+      directions.splice(index, 1);
+
+      const nextVertex = this.nextVertexInDirection(
+        bullet.vertex,
+        randomDirection
+      );
+
+      if (this.graph[bullet.vertex].includes(nextVertex)) {
+        this.moveBullet(bullet, nextVertex, randomDirection);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  validMissileTurnDirections(direction) {
+    if (direction === "up" || direction === "down") {
+      return ["left", "right"];
+    }
+
+    return ["up", "down"];
+  }
+
+  moveBullet(bullet, vertex, direction) {
+    this.removeBullet(bullet);
+    this.insertBullet(bullet, vertex, direction);
   }
 
   addPlayerEvents() {
     document.addEventListener("keydown", this.onKeydown.bind(this));
+  }
+
+  nextVertexInDirection(vertex, direction) {
+    switch (direction) {
+      case "up":
+        return vertex - this.cols;
+      case "down":
+        return vertex + this.cols;
+      case "left":
+        return vertex - 1;
+      case "right":
+        return vertex + 1;
+      default:
+        return;
+    }
   }
 
   onKeydown(e) {
@@ -265,6 +448,9 @@ class Maze {
       "ArrowDown",
       "ArrowLeft",
       "ArrowRight",
+      " ",
+      "Enter",
+      "p",
     ];
 
     if (validKeys.includes(e.key)) {
@@ -272,25 +458,75 @@ class Maze {
     }
 
     // Robber movement
-    if (e.key === "w") {
-      this.tryMovePlayer(this.robber, this.robber.vertex - this.cols);
-    } else if (e.key === "s") {
-      this.tryMovePlayer(this.robber, this.robber.vertex + this.cols);
-    } else if (e.key === "a") {
-      this.tryMovePlayer(this.robber, this.robber.vertex - 1);
-    } else if (e.key === "d") {
-      this.tryMovePlayer(this.robber, this.robber.vertex + 1);
+    if (Number.isFinite(this.robber.vertex)) {
+      if (e.key === "w") {
+        this.tryMovePlayer(
+          this.robber,
+          this.cop,
+          this.robber.vertex - this.cols,
+          "up"
+        );
+      } else if (e.key === "s") {
+        this.tryMovePlayer(
+          this.robber,
+          this.cop,
+          this.robber.vertex + this.cols,
+          "down"
+        );
+      } else if (e.key === "a") {
+        this.tryMovePlayer(
+          this.robber,
+          this.cop,
+          this.robber.vertex - 1,
+          "left"
+        );
+      } else if (e.key === "d") {
+        this.tryMovePlayer(
+          this.robber,
+          this.cop,
+          this.robber.vertex + 1,
+          "right"
+        );
+      }
     }
 
     // Cop movement
-    if (e.key === "ArrowUp") {
-      this.tryMovePlayer(this.cop, this.cop.vertex - this.cols);
-    } else if (e.key === "ArrowDown") {
-      this.tryMovePlayer(this.cop, this.cop.vertex + this.cols);
-    } else if (e.key === "ArrowLeft") {
-      this.tryMovePlayer(this.cop, this.cop.vertex - 1);
-    } else if (e.key === "ArrowRight") {
-      this.tryMovePlayer(this.cop, this.cop.vertex + 1);
+    if (Number.isFinite(this.cop.vertex)) {
+      if (e.key === "ArrowUp") {
+        this.tryMovePlayer(
+          this.cop,
+          this.robber,
+          this.cop.vertex - this.cols,
+          "up"
+        );
+      } else if (e.key === "ArrowDown") {
+        this.tryMovePlayer(
+          this.cop,
+          this.robber,
+          this.cop.vertex + this.cols,
+          "down"
+        );
+      } else if (e.key === "ArrowLeft") {
+        this.tryMovePlayer(this.cop, this.robber, this.cop.vertex - 1, "left");
+      } else if (e.key === "ArrowRight") {
+        this.tryMovePlayer(this.cop, this.robber, this.cop.vertex + 1, "right");
+      }
+    }
+
+    // Robber Abilities
+    if (e.key === " ") {
+      this.tryPlayerTeleport(this.robber, this.cop);
+    }
+
+    // Cop Abilities
+    if (this.cop.canShoot) {
+      if (e.key === "Enter") {
+        this.copBullet.isMissile = false;
+        this.tryPlayerShoot(this.cop, this.copBullet);
+      } else if (e.key === "p") {
+        this.copBullet.isMissile = true;
+        this.tryPlayerShoot(this.cop, this.copBullet);
+      }
     }
   }
 

@@ -57,7 +57,7 @@ async function move(from, to) {
 
   if (!disk) return;
 
-  ++moves;
+  moves++;
   document.getElementById("moves").innerHTML = `Moves: ${moves}`;
 
   fromRod.removeChild(disk);
