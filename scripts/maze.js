@@ -338,16 +338,18 @@ class Maze {
   tryPlayerShoot(player, bullet, isMissile) {
     if (!player.direction) return;
 
-    player.canShoot = false;
-    player.isMissile = isMissile;
-
-    player.lifetime = isMissile ? 50 : 20;
-
-    this.insertBullet(
-      bullet,
-      this.nextVertexInDirection(player.vertex, player.direction),
+    const nextVertex = this.nextVertexInDirection(
+      player.vertex,
       player.direction
     );
+
+    if (!this.graph[player.vertex].includes(nextVertex)) return;
+
+    player.canShoot = false;
+    player.lifetime = isMissile ? 50 : 20;
+    bullet.isMissile = isMissile;
+
+    this.insertBullet(bullet, nextVertex, player.direction);
   }
 
   insertBullet(bullet, vertex, direction) {
@@ -514,18 +516,16 @@ class Maze {
     }
 
     // Robber Abilities
-    if (e.key === " ") {
+    if (e.key === " " && this.robber.canTeleport) {
       this.tryPlayerTeleport(this.robber, this.cop);
     }
 
     // Cop Abilities
     if (this.cop.canShoot) {
       if (e.key === "Enter") {
-        this.copBullet.isMissile = false;
-        this.tryPlayerShoot(this.cop, this.copBullet);
+        this.tryPlayerShoot(this.cop, this.copBullet, false);
       } else if (e.key === "p") {
-        this.copBullet.isMissile = true;
-        this.tryPlayerShoot(this.cop, this.copBullet);
+        this.tryPlayerShoot(this.cop, this.copBullet, true);
       }
     }
   }
