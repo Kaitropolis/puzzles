@@ -1,6 +1,13 @@
 class Maze {
   constructor() {
     this.container = document.getElementById("game-container");
+    this.audio = document.getElementById("audio");
+    this.audioFiles = [
+      "stealth-battle-205902.mp3",
+      "labyrinth-escape-333453.mp3",
+      "japanese-battle-164989",
+    ];
+    this.audioIndex = 0;
     this.rows = 25;
     this.cols = 50;
     this.graph = [];
@@ -99,7 +106,7 @@ class Maze {
     // ];
 
     for (let i = 0; i < path.length; ++i) {
-      await this.sleep(1);
+      //await this.sleep(1);
 
       const [from, to] = path[i];
       const fromEl = document.getElementById(from.toString());
@@ -247,8 +254,24 @@ class Maze {
   startGame() {
     this.addPlayers();
     this.addPlayerEvents();
+    this.playAudio();
 
     setInterval(this.gameLoop.bind(this), 250);
+  }
+
+  playAudio() {
+    this.audio.src = "/music/" + this.audioFiles[this.audioIndex];
+    this.audio.play();
+
+    this.audio.onended = () => {
+      this.audioIndex = (this.audioIndex + 1) % this.audioFiles.length;
+      this.playAudio();
+    };
+  }
+
+  stopAudio() {
+    this.audio.pause();
+    this.audio.currentTime = 0;
   }
 
   gameLoop() {
